@@ -11,17 +11,17 @@ import (
 	"time"
 )
 
-const timeout = 45
-
 var (
 	c                           *bot.Client
 	watch                       chan time.Time
 	ip, name, account, password string
 	port                        int
+	timeout						int
 )
 
 func main() {
 	log.SetOutput(colorable.NewColorableStdout())
+	flag.IntVar(&timeout,"t",45,"自动重新抛竿时间")
 	flag.StringVar(&ip, "ip", "localhost", "服务器IP")
 	flag.StringVar(&name, "name", "", "游戏ID")
 	flag.IntVar(&port, "port", 25565, "端口，默认25565")
@@ -121,7 +121,7 @@ func onDisconnect(c chat.Message) error {
 }
 
 func watchDog() {
-	to := time.NewTimer(time.Second * timeout)
+	to := time.NewTimer(time.Second * time.Duration(timeout))
 	for {
 		select {
 		case <-watch:
@@ -131,6 +131,6 @@ func watchDog() {
 				panic(err)
 			}
 		}
-		to.Reset(time.Second * timeout)
+		to.Reset(time.Second * time.Duration(timeout))
 	}
 }

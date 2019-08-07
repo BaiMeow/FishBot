@@ -163,5 +163,3 @@ func watchDog() {
 		to.Reset(time.Second * time.Duration(timeout))
 	}
 }
-
-//

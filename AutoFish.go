@@ -7,9 +7,9 @@ import (
 	"math"
 	"time"
 
-	auth "github.com/Tnze/go-mc/authenticate"
 	"github.com/Tnze/go-mc/bot"
 	"github.com/Tnze/go-mc/chat"
+	auth "github.com/Tnze/go-mc/yggdrasil"
 	"github.com/mattn/go-colorable"
 )
 

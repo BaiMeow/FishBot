@@ -1,17 +1,24 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"log"
 	"math"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Tnze/go-mc/bot"
 	"github.com/Tnze/go-mc/chat"
-	auth "github.com/Tnze/go-mc/yggdrasil"
-	"github.com/mattn/go-colorable"
+	_ "github.com/Tnze/go-mc/data/lang/zh-cn"
+	"github.com/Tnze/go-mc/realms"
+	ygg "github.com/Tnze/go-mc/yggdrasil"
 )
+
+const version = "1.14.4"
 
 var (
 	c       *bot.Client
@@ -23,50 +30,58 @@ func main() {
 	var (
 		ip, name, account, password, authserver string
 		port                                    int
+		realm                                   bool
 	)
-	log.SetOutput(colorable.NewColorableStdout())
 	flag.IntVar(&timeout, "t", 45, "自动重新抛竿时间")
 	flag.StringVar(&ip, "ip", "localhost", "服务器IP")
 	flag.StringVar(&name, "name", "", "游戏ID")
 	flag.IntVar(&port, "port", 25565, "端口，默认25565")
 	flag.StringVar(&password, "passwd", "", "Mojang账户密码")
 	flag.StringVar(&account, "account", "", "Mojang账号")
-	flag.StringVar(&authserver, "auth", "", "验证服务器（外置登陆）")
+	flag.StringVar(&authserver, "auth", "https://authserver.mojang.com", "验证服务器（外置登陆）")
+	flag.BoolVar(&realm, "realms", false, "加入领域服")
 	flag.Parse()
 	log.Println("自动钓鱼机器人启动！")
 	log.Println("基于github.com/Tnze/go-mc")
 	log.Println("作者: Tnze＆BaiMeow")
 	log.Println("-h参数以查看更多用法")
 	if account != "" {
-		resp, err := auth.AuthWithThirdPartyServer(account, password, authserver)
-		if err != nil {
-			panic(err)
+		if authserver != "https://authserver.mojang.com" {
+			ygg.AuthURL = fmt.Sprintf("%s/authserver", authserver)
 		}
-		if resp.Error != "" {
-			log.Println(resp.Error, resp.ErrorMessage)
+		resp, err := ygg.Authenticate(account, password)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
 		}
 		log.Println("Auth success")
-		if len(resp.AvailableProfiles) != 1 {
-			//	log.Println("选择角色")
-			//	for i := 0; i < len(resp.AvailableProfiles); i++ {
-			//		fmt.Printf("[%[1]d]"+resp.AvailableProfiles[i].Name+"\n", i)
-			//	}
-			//	var no int
-			//	fmt.Scanf("%d", no)
-			//	resp.SelectedProfile.Name = resp.AvailableProfiles[no].Name
-			//	resp.SelectedProfile.ID = resp.AvailableProfiles[no].ID
-			//	resp.SelectedProfile.Legacy = resp.AvailableProfiles[no].Legacy
-			//	err := c.Refresh()
-			panic("暂不支持多角色")
-		}
-		c = bot.NewClient()
-		c.Auth = bot.Auth{
-			Name:   resp.SelectedProfile.Name,
-			UUID:   resp.SelectedProfile.ID,
-			AsTk:   resp.AccessToken,
-			Server: authserver,
+		if len(resp.AvailableProfiles()) != 1 {
+			//多用户选择、登陆
+			log.Println("选择角色")
+			for i := 0; i < len(resp.AvailableProfiles()); i++ {
+				fmt.Printf("[%d]"+resp.AvailableProfiles()[i].Name+"\n", i)
+			}
+			var no int
+			log.Println("请输入角色序号")
+			fmt.Scan(&no)
+			c = bot.NewClient()
+			c.Name = resp.AvailableProfiles()[no].Name
+			c.Auth.UUID = resp.AvailableProfiles()[no].ID
+			var astk string
+			astk, err := resp.Refresh(&resp.AvailableProfiles()[no])
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			c.AsTk = astk
+		} else {
+			//单用户登陆
+			c = bot.NewClient()
+			c.Auth.UUID, c.Name = resp.SelectedProfile()
+			c.AsTk = resp.AccessToken()
 		}
 	} else {
+		//盗版登陆
 		c = bot.NewClient()
 		c.Auth = bot.Auth{
 			Name: name,
@@ -75,9 +90,45 @@ func main() {
 		}
 	}
 	//Login
+	if authserver != "https://authserver.mojang.com" {
+		c.SessionURL = fmt.Sprintf("%s/sessionserver/session/minecraft/join", authserver)
+		log.Println("第三方验证")
+	} else {
+		c.SessionURL = "https://sessionserver.mojang.com/session/minecraft/join"
+		log.Println("Mojang验证")
+	}
+	//判断是否领域服登陆，获取领域服IP
+	if realm == true {
+		var r *realms.Realms
+		r = realms.New(version, c.Name, c.AsTk, c.Auth.UUID)
+		servers, err := r.Worlds()
+		if err != nil {
+			panic(err)
+		}
+		var i, no = 0, 0
+		//list realms
+		for _, v := range servers {
+			fmt.Printf("[%d]"+v.Name+"\n", i)
+			i++
+		}
+		//agree TOS
+		if err := r.TOS(); err != nil {
+			panic(err)
+		}
+		fmt.Scan(&no)
+		//GET IP
+		ipandport, err := r.Address(servers[no])
+		if err != nil {
+			panic(err)
+		}
+		s := strings.Split(ipandport, ":")
+		ip = s[0]
+		port, _ = strconv.Atoi(s[1])
+	}
 	err := c.JoinServer(ip, port)
 	if err != nil {
 		log.Fatal(err)
+
 	}
 	log.Println("Login success")
 	go sendMsg()
@@ -93,11 +144,12 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
 func sendMsg() error {
 	var send string
 	for {
-		fmt.Scanln(&send)
+		//fmt.Scanln(&send)
+		Reader := bufio.NewReader(os.Stdin)
+		send, _ = Reader.ReadString('\n')
 		if err := c.Chat(send); err != nil {
 			return err
 		}
@@ -140,7 +192,7 @@ func distance(x, y, z float64) float64 {
 }
 
 func onChatMsg(c chat.Message, pos byte) error {
-	log.Println("Chat:", c)
+	log.Println("Chat:", c.String())
 	return nil
 }
 

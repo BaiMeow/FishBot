@@ -115,6 +115,7 @@ func main() {
 		if err := r.TOS(); err != nil {
 			panic(err)
 		}
+		log.Println("请输入领域序号")
 		fmt.Scan(&no)
 		//GET IP
 		ipandport, err := r.Address(servers[no])

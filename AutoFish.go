@@ -16,6 +16,7 @@ import (
 	_ "github.com/Tnze/go-mc/data/lang/zh-cn"
 	"github.com/Tnze/go-mc/realms"
 	ygg "github.com/Tnze/go-mc/yggdrasil"
+	"github.com/mattn/go-colorable"
 )
 
 const version = "1.14.4"
@@ -32,6 +33,7 @@ func main() {
 		port                                    int
 		realm                                   bool
 	)
+	log.SetOutput(colorable.NewColorableStdout())
 	flag.IntVar(&timeout, "t", 45, "自动重新抛竿时间")
 	flag.StringVar(&ip, "ip", "localhost", "服务器IP")
 	flag.StringVar(&name, "name", "", "游戏ID")

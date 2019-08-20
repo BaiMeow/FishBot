@@ -170,7 +170,7 @@ func onGameStart() error {
 
 func onSound(name string, category int, x, y, z float64, volume, pitch float32) error {
 	if name == "entity.fishing_bobber.splash" {
-		if distance(x, y, z) < 4 {
+		if distance(x, z) < 4 {
 			if err := c.UseItem(0); err != nil { //retrieve
 				return err
 			}
@@ -187,11 +187,10 @@ func onSound(name string, category int, x, y, z float64, volume, pitch float32) 
 	return nil
 }
 
-func distance(x, y, z float64) float64 {
+func distance(x, z float64) float64 {
 	x0 := math.Abs(c.X - x)
-	y0 := math.Abs(c.Y - y)
 	z0 := math.Abs(c.Z - z)
-	return math.Sqrt(x0*x0 + y0*y0 + z0*z0)
+	return math.Sqrt(x0*x0 + z0*z0)
 }
 
 func onChatMsg(c chat.Message, pos byte) error {

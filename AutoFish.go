@@ -235,10 +235,10 @@ func watchDog() {
 func onSpawnObj(EID int, UUID [16]byte, Type int, x, y, z float64, Pitch, Yaw float32, Data int, VelocityX, VelocitY, VelocitZ int16) error {
 	if Type == 101 {
 		if Data == c.EntityID {
-			log.Println("Spawn your Float")
+			//log.Println("Spawn your Float")
 			float = floats{EID, x, y, z}
-		} else {
-			log.Println("Other's Float")
+			//} else {
+			//	log.Println("Other's Float")
 		}
 	}
 	return nil

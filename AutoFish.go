@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Tnze/go-mc/bot"
+	"github.com/Tnze/go-mc/bot/world/entity"
 	"github.com/Tnze/go-mc/chat"
 	_ "github.com/Tnze/go-mc/data/lang/zh-cn"
 	"github.com/Tnze/go-mc/realms"
@@ -25,7 +26,15 @@ var (
 	c       *bot.Client
 	watch   chan time.Time
 	timeout int
+	float   floats
 )
+
+type floats struct {
+	ID int
+	x  float64
+	y  float64
+	z  float64
+}
 
 func main() {
 	var (
@@ -44,6 +53,8 @@ func main() {
 	flag.BoolVar(&realm, "realms", false, "加入领域服")
 	flag.Parse()
 	log.Println("自动钓鱼机器人启动！")
+	log.Println("机器人版本：1.3.0")
+	log.Printf("游戏版本：%s", version)
 	log.Println("基于github.com/Tnze/go-mc")
 	log.Println("作者: Tnze＆BaiMeow")
 	log.Println("-h参数以查看更多用法")
@@ -140,7 +151,9 @@ func main() {
 	c.Events.ChatMsg = onChatMsg
 	c.Events.Disconnect = onDisconnect
 	c.Events.SoundPlay = onSound
-
+	c.Events.SpawnObj = onSpawnObj
+	c.Events.EntityRelativeMove = onEntityRelativeMove
+	c.Events.WindowsItemChange = onWindowsItemChange
 	//JoinGame
 	err = c.HandleGame()
 	if err != nil {
@@ -170,7 +183,7 @@ func onGameStart() error {
 
 func onSound(name string, category int, x, y, z float64, volume, pitch float32) error {
 	if name == "entity.fishing_bobber.splash" {
-		if distance(x, z) < 4 {
+		if distance(x, y, z) < 0.25 {
 			if err := c.UseItem(0); err != nil { //retrieve
 				return err
 			}
@@ -187,10 +200,11 @@ func onSound(name string, category int, x, y, z float64, volume, pitch float32) 
 	return nil
 }
 
-func distance(x, z float64) float64 {
-	x0 := math.Abs(c.X - x)
-	z0 := math.Abs(c.Z - z)
-	return math.Sqrt(x0*x0 + z0*z0)
+func distance(x, y, z float64) float64 {
+	x0 := float.x - x
+	y0 := float.y - y
+	z0 := float.z - z
+	return math.Sqrt(x0*x0 + y0*y0 + z0*z0)
 }
 
 func onChatMsg(c chat.Message, pos byte) error {
@@ -216,4 +230,32 @@ func watchDog() {
 		}
 		to.Reset(time.Second * time.Duration(timeout))
 	}
+}
+
+func onSpawnObj(EID int, UUID [16]byte, Type int, x, y, z float64, Pitch, Yaw float32, Data int, VelocityX, VelocitY, VelocitZ int16) error {
+	if Type == 101 {
+		if Data == c.EntityID {
+			log.Println("Spawn your Float")
+			float = floats{EID, x, y, z}
+		} else {
+			log.Println("Other's Float")
+		}
+	}
+	return nil
+}
+
+func onEntityRelativeMove(EID int, DeltaX, DeltaY, DeltaZ int16) error {
+	if EID == float.ID {
+		float.x += float64(DeltaX) / 4096
+		float.y += float64(DeltaY) / 4096
+		float.z += float64(DeltaZ) / 4096
+	}
+	return nil
+}
+
+func onWindowsItemChange(id byte, slotID int, slot entity.Slot) error {
+	if id == 0 {
+		fmt.Println(slot.ItemID)
+	}
+	return nil
 }

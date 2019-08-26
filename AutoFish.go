@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/Tnze/go-mc/bot"
-	"github.com/Tnze/go-mc/bot/world/entity"
 	"github.com/Tnze/go-mc/chat"
 	_ "github.com/Tnze/go-mc/data/lang/zh-cn"
 	"github.com/Tnze/go-mc/realms"
@@ -153,7 +152,7 @@ func main() {
 	c.Events.SoundPlay = onSound
 	c.Events.SpawnObj = onSpawnObj
 	c.Events.EntityRelativeMove = onEntityRelativeMove
-	c.Events.WindowsItemChange = onWindowsItemChange
+	//	c.Events.WindowsItemChange = onWindowsItemChange
 	//JoinGame
 	err = c.HandleGame()
 	if err != nil {
@@ -253,9 +252,9 @@ func onEntityRelativeMove(EID int, DeltaX, DeltaY, DeltaZ int16) error {
 	return nil
 }
 
-func onWindowsItemChange(id byte, slotID int, slot entity.Slot) error {
-	if id == 0 {
-		fmt.Println(slot.ItemID)
-	}
-	return nil
-}
+//func onWindowsItemChange(id byte, slotID int, slot entity.Slot) error {
+//	if id == 0 {
+//		fmt.Println(slot.ItemID)
+//	}
+//	return nil
+//}

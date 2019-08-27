@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math"
 	"os"
@@ -11,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AlecAivazis/survey"
 	"github.com/Tnze/go-mc/bot"
 	"github.com/Tnze/go-mc/chat"
 	_ "github.com/Tnze/go-mc/data/lang/zh-cn"
@@ -26,6 +29,8 @@ var (
 	watch   chan time.Time
 	timeout int
 	float   floats
+	auth    player
+	resp    *ygg.Access
 )
 
 type floats struct {
@@ -35,18 +40,34 @@ type floats struct {
 	z  float64
 }
 
+type config struct {
+	Players []player `json:"players"`
+}
+
+type player struct {
+	Name       string `json:"name"`
+	UUID       string `json:"UUID"`
+	AsTk       string `json:"AsTk"`
+	Account    string `json:"account"`
+	Authserver string `json:"authserver"`
+	Authmode   string `json:"authmode"`
+}
+
+//0 mojang
+//1 three
+//2 offline
+
 func main() {
 	var (
-		ip, name, account, password, authserver string
-		port                                    int
-		realm                                   bool
+		ip, name, account, authserver string
+		port                          int
+		realm                         bool
 	)
 	log.SetOutput(colorable.NewColorableStdout())
 	flag.IntVar(&timeout, "t", 45, "自动重新抛竿时间")
 	flag.StringVar(&ip, "ip", "localhost", "服务器IP")
 	flag.StringVar(&name, "name", "", "游戏ID")
 	flag.IntVar(&port, "port", 25565, "端口，默认25565")
-	flag.StringVar(&password, "passwd", "", "Mojang账户密码")
 	flag.StringVar(&account, "account", "", "Mojang账号")
 	flag.StringVar(&authserver, "auth", "https://authserver.mojang.com", "验证服务器（外置登陆）")
 	flag.BoolVar(&realm, "realms", false, "加入领域服")
@@ -58,90 +79,25 @@ func main() {
 	log.Println("作者: Tnze＆BaiMeow")
 	log.Println("-h参数以查看更多用法")
 	if account != "" {
-		if authserver != "https://authserver.mojang.com" {
-			ygg.AuthURL = fmt.Sprintf("%s/authserver", authserver)
-		}
-		resp, err := ygg.Authenticate(account, password)
-		if err != nil {
-			fmt.Println(err)
+		//验证登陆
+		authlogin(&account, &authserver)
+	} else if name == "" {
+		//若没有输入登陆信息则读取配置
+		loadconfiglogin()
+	}
+	c = bot.NewClient()
+	c.Name, c.Auth.UUID, c.AsTk = auth.Name, auth.UUID, auth.AsTk
+	//判断是否领域服登陆，整一个领域ip
+	if realm == true {
+		if err := checkrealms(&ip, &port); err != nil {
+			log.Println(err)
 			os.Exit(1)
 		}
-		log.Println("Auth success")
-		if len(resp.AvailableProfiles()) != 1 {
-			//多用户选择、登陆
-			log.Println("选择角色")
-			for i := 0; i < len(resp.AvailableProfiles()); i++ {
-				fmt.Printf("[%d]"+resp.AvailableProfiles()[i].Name+"\n", i)
-			}
-			var no int
-			log.Println("请输入角色序号")
-			fmt.Scan(&no)
-			c = bot.NewClient()
-			c.Name = resp.AvailableProfiles()[no].Name
-			c.Auth.UUID = resp.AvailableProfiles()[no].ID
-			var astk string
-			astk, err := resp.Refresh(&resp.AvailableProfiles()[no])
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			c.AsTk = astk
-		} else {
-			//单用户登陆
-			c = bot.NewClient()
-			c.Auth.UUID, c.Name = resp.SelectedProfile()
-			c.AsTk = resp.AccessToken()
-		}
-	} else {
-		//盗版登陆
-		c = bot.NewClient()
-		c.Auth = bot.Auth{
-			Name: name,
-			UUID: "",
-			AsTk: "",
-		}
 	}
-	//Login
-	if authserver != "https://authserver.mojang.com" {
-		c.SessionURL = fmt.Sprintf("%s/sessionserver/session/minecraft/join", authserver)
-		log.Println("第三方验证")
-	} else {
-		c.SessionURL = "https://sessionserver.mojang.com/session/minecraft/join"
-		log.Println("Mojang验证")
-	}
-	//判断是否领域服登陆，获取领域服IP
-	if realm == true {
-		var r *realms.Realms
-		r = realms.New(version, c.Name, c.AsTk, c.Auth.UUID)
-		servers, err := r.Worlds()
-		if err != nil {
-			panic(err)
-		}
-		var i, no = 0, 0
-		//list realms
-		for _, v := range servers {
-			fmt.Printf("[%d]"+v.Name+"\n", i)
-			i++
-		}
-		//agree TOS
-		if err := r.TOS(); err != nil {
-			panic(err)
-		}
-		log.Println("请输入领域序号")
-		fmt.Scan(&no)
-		//GET IP
-		ipandport, err := r.Address(servers[no])
-		if err != nil {
-			panic(err)
-		}
-		s := strings.Split(ipandport, ":")
-		ip = s[0]
-		port, _ = strconv.Atoi(s[1])
-	}
+	//Join Game
 	err := c.JoinServer(ip, port)
 	if err != nil {
 		log.Fatal(err)
-
 	}
 	log.Println("Login success")
 	go sendMsg()
@@ -152,7 +108,7 @@ func main() {
 	c.Events.SoundPlay = onSound
 	c.Events.SpawnObj = onSpawnObj
 	c.Events.EntityRelativeMove = onEntityRelativeMove
-	//	c.Events.WindowsItemChange = onWindowsItemChange
+	//c.Events.WindowsItemChange = onWindowsItemChange
 	//JoinGame
 	err = c.HandleGame()
 	if err != nil {
@@ -252,9 +208,147 @@ func onEntityRelativeMove(EID int, DeltaX, DeltaY, DeltaZ int16) error {
 	return nil
 }
 
+func checkrealms(ip *string, port *int) error {
+	var r *realms.Realms
+	r = realms.New(version, c.Name, c.AsTk, c.Auth.UUID)
+	servers, err := r.Worlds()
+	if err != nil {
+		return err
+	}
+	var i, no = 0, 0
+	//list realms
+	for _, v := range servers {
+		fmt.Printf("[%d]"+v.Name+"\n", i)
+		i++
+	}
+	//agree TOS
+	if err := r.TOS(); err != nil {
+		return err
+	}
+	log.Println("请输入领域序号")
+	fmt.Scan(&no)
+	//GET IP
+	ipandport, err := r.Address(servers[no])
+	if err != nil {
+		return err
+	}
+	s := strings.Split(ipandport, ":")
+	*ip = s[0]
+	*port, _ = strconv.Atoi(s[1])
+	return nil
+}
+
 //func onWindowsItemChange(id byte, slotID int, slot entity.Slot) error {
 //	if id == 0 {
 //		fmt.Println(slot.ItemID)
 //	}
 //	return nil
 //}
+
+func authlogin(account, authserver *string) {
+	if *authserver != "https://authserver.mojang.com" {
+		ygg.AuthURL = fmt.Sprintf("%s/authserver", *authserver)
+		bot.SessionURL = fmt.Sprintf("%s/sessionserver/session/minecraft/join", *authserver)
+		log.Println("第三方验证")
+	}
+	password := ""
+	prompt := &survey.Password{
+		Message: "Please type your password",
+	}
+	survey.AskOne(prompt, &password)
+	resp, err := ygg.Authenticate(*account, string(password))
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	log.Println("Auth success")
+	if len(resp.AvailableProfiles()) != 1 {
+		//多用户选择、登陆
+		log.Println("选择角色")
+		for i := 0; i < len(resp.AvailableProfiles()); i++ {
+			fmt.Printf("[%d]"+resp.AvailableProfiles()[i].Name+"\n", i)
+		}
+		var no int
+		log.Println("请输入角色序号")
+		fmt.Scan(&no)
+		auth.Name = resp.AvailableProfiles()[no].Name
+		auth.UUID = resp.AvailableProfiles()[no].ID
+		if err = resp.Refresh(&resp.AvailableProfiles()[no]); err != nil {
+			log.Fatal(err)
+			os.Exit(1)
+		}
+		auth.AsTk = resp.AccessToken()
+		return
+	}
+	//单用户登陆
+	auth.UUID, auth.Name = resp.SelectedProfile()
+	auth.AsTk = resp.AccessToken()
+	return
+}
+
+func loadconf() config {
+	data, err := ioutil.ReadFile("./conf.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var conf config
+	err = json.Unmarshal(data, &conf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return conf
+}
+
+func loadconfiglogin() {
+	conf := loadconf()
+	log.Println("load config success")
+	//让玩家选一个
+	var (
+		selected    string
+		i           = 0
+		preSelected []string
+		selectedNo  int
+	)
+	for _, v := range conf.Players {
+		preSelected = append(preSelected, fmt.Sprintf("[%d]", i)+v.Name+"\t"+v.Authmode+"\t"+v.Authserver)
+		i++
+	}
+	prompt := &survey.Select{
+		Message: "Choose a profile:",
+		Options: preSelected,
+	}
+	survey.AskOne(prompt, &selected)
+	selectedNo, _ = strconv.Atoi(selected[1:2])
+	auth = conf.Players[selectedNo]
+	//检查登陆类型
+	switch auth.Authmode {
+	case "Offline":
+		return
+	case "MojangAuth":
+		//检测asTk是否有效
+		ok, err := resp.Validate(auth.AsTk)
+		if err != nil {
+			log.Fatal(err)
+			os.Exit(1)
+		}
+		if ok == true {
+			return
+		}
+		authlogin(&auth.Account, &auth.Authserver)
+	case "ThreeAuth":
+		ygg.AuthURL = fmt.Sprintf("%s/authserver", auth.Authserver)
+		bot.SessionURL = fmt.Sprintf("%s/sessionserver/session/minecraft/join", auth.Authserver)
+		ok, err := resp.Validate(auth.AsTk)
+		if err != nil {
+			log.Fatal(err)
+			os.Exit(1)
+		}
+		if ok == true {
+			return
+		}
+		authlogin(&auth.Account, &auth.Authserver)
+	default:
+		log.Fatal("Unknown authmode")
+		os.Exit(1)
+	}
+}

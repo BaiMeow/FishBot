@@ -1,0 +1,20 @@
+{
+    "players": [
+        {
+            "name": "bs1",
+            "UUID": "",
+            "AsTk": "",
+            "account": "",
+            "authserver": "",
+            "authmode": "Offline"
+        },
+        {
+            "name": "bs2",
+            "UUID": "",
+            "AsTk": "",
+            "account": "",
+            "authserver": "",
+            "authmode": "Offline"
+        }
+    ]
+}

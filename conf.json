@@ -9,7 +9,23 @@
             "authmode": "Offline"
         },
         {
+            "name": "Msc__BaiMeow",
+            "UUID": "1ef88718148741cb8f5770e01fd55ef7",
+            "AsTk": "ffffffffffffffffffffffffffffffff",
+            "account": "100000@qq.com",
+            "authserver": "https://authserver.mojang.com",
+            "authmode": "MojangAuth"
+        },
+        {
             "name": "bs2",
+            "UUID": "",
+            "AsTk": "",
+            "account": "",
+            "authserver": "",
+            "authmode": "Offline"
+        },
+        {
+            "name": "bs3",
             "UUID": "",
             "AsTk": "",
             "account": "",

@@ -31,6 +31,7 @@ var (
 	float   floats
 	auth    player
 	resp    *ygg.Access
+	conf    config
 )
 
 type floats struct {
@@ -73,7 +74,7 @@ func main() {
 	flag.BoolVar(&realm, "realms", false, "加入领域服")
 	flag.Parse()
 	log.Println("自动钓鱼机器人启动！")
-	log.Println("机器人版本：1.3.0")
+	log.Println("机器人版本：1.4-Pre1")
 	log.Printf("游戏版本：%s", version)
 	log.Println("基于github.com/Tnze/go-mc")
 	log.Println("作者: Tnze＆BaiMeow")
@@ -84,9 +85,13 @@ func main() {
 	} else if name == "" {
 		//若没有输入登陆信息则读取配置
 		loadconfiglogin()
+	} else {
+		auth.Name = name
+		auth.Authmode = "Offline"
 	}
 	c = bot.NewClient()
 	c.Name, c.Auth.UUID, c.AsTk = auth.Name, auth.UUID, auth.AsTk
+	writeconfig()
 	//判断是否领域服登陆，整一个领域ip
 	if realm == true {
 		if err := checkrealms(&ip, &port); err != nil {
@@ -250,7 +255,12 @@ func authlogin(account, authserver *string) {
 		ygg.AuthURL = fmt.Sprintf("%s/authserver", *authserver)
 		bot.SessionURL = fmt.Sprintf("%s/sessionserver/session/minecraft/join", *authserver)
 		log.Println("第三方验证")
+		auth.Authmode = "ThreeAuth"
+	} else {
+		auth.Authmode = "MojangAuth"
 	}
+	auth.Authserver = *authserver
+	auth.Account = *account
 	password := ""
 	prompt := &survey.Password{
 		Message: "Please type your password",
@@ -289,7 +299,13 @@ func authlogin(account, authserver *string) {
 func loadconf() config {
 	data, err := ioutil.ReadFile("./conf.json")
 	if err != nil {
+		if os.IsNotExist(err) {
+			log.Fatal("配置文件不存在，请使用-account参数添加")
+			os.Exit(1)
+		}
+	} else {
 		log.Fatal(err)
+		os.Exit(1)
 	}
 	var conf config
 	err = json.Unmarshal(data, &conf)
@@ -300,7 +316,7 @@ func loadconf() config {
 }
 
 func loadconfiglogin() {
-	conf := loadconf()
+	conf = loadconf()
 	log.Println("load config success")
 	//让玩家选一个
 	var (
@@ -350,5 +366,57 @@ func loadconfiglogin() {
 	default:
 		log.Fatal("Unknown authmode")
 		os.Exit(1)
+	}
+}
+
+func writeconfig() {
+	//文件不存在
+	_, err := os.Stat("conf.json")
+	if os.IsNotExist(err) {
+		conf.Players = append(conf.Players, auth)
+		data, _ := json.Marshal(conf)
+		var d1 = []byte(data)
+		err := ioutil.WriteFile("conf.json", d1, 0666)
+		if err != nil {
+			log.Fatal(err)
+			os.Exit(1)
+		}
+		return
+	}
+	//文件存在
+	conf = loadconf()
+	var i = 0
+	//判断是否已存在该角色
+	for _, v := range conf.Players {
+		//正版根据UUID判断
+		if v.UUID == auth.UUID {
+			//盗版判断
+			if auth.Authmode == "Offline" {
+				//盗版根据名字判断
+				if auth.Name == v.Name {
+					return
+				}
+				break
+			}
+			//检查AsTk是否过期
+			v.AsTk = auth.AsTk
+			goto Replace
+		}
+		i++
+	}
+	conf.Players = append(conf.Players, auth)
+	//替换配置文件
+Replace:
+	data, _ := json.Marshal(conf)
+	var d1 = []byte(data)
+	if err := os.Remove("conf.json"); err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+	err = ioutil.WriteFile("conf.json", d1, 0666)
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+
 	}
 }

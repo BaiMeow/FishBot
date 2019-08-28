@@ -300,18 +300,17 @@ func loadconf() config {
 	data, err := ioutil.ReadFile("./conf.json")
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Fatal("配置文件不存在，请使用-account参数添加")
+			log.Fatal("配置文件不存在，请使用-account参数添加", err)
 			os.Exit(1)
 		}
-	} else {
 		log.Fatal(err)
 		os.Exit(1)
 	}
-	var conf config
 	err = json.Unmarshal(data, &conf)
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("读取到配置文件")
 	return conf
 }
 
@@ -399,21 +398,27 @@ func writeconfig() {
 				break
 			}
 			//检查AsTk是否过期
-			v.AsTk = auth.AsTk
-			goto Replace
+			if v.AsTk == auth.AsTk {
+				return
+			}
+			replaceConf()
+			return
 		}
 		i++
 	}
 	conf.Players = append(conf.Players, auth)
 	//替换配置文件
-Replace:
+	replaceConf()
+}
+
+func replaceConf() {
 	data, _ := json.Marshal(conf)
 	var d1 = []byte(data)
 	if err := os.Remove("conf.json"); err != nil {
 		log.Fatal(err)
 		os.Exit(1)
 	}
-	err = ioutil.WriteFile("conf.json", d1, 0666)
+	err := ioutil.WriteFile("conf.json", d1, 0666)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)

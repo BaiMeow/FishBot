@@ -76,7 +76,7 @@ func main() {
 	flag.StringVar(&uuid, "uuid", "", "直接根据uuid读取配置文件进入游戏")
 	flag.Parse()
 	log.Println("自动钓鱼机器人启动！")
-	log.Println("机器人版本：1.4-Pre3")
+	log.Println("机器人版本：1.4-Pre4")
 	log.Printf("游戏版本：%s", version)
 	log.Println("基于github.com/Tnze/go-mc")
 	log.Println("作者: Tnze＆BaiMeow")

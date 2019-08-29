@@ -63,37 +63,50 @@ func main() {
 		ip, name, account, authserver string
 		port                          int
 		realm                         bool
+		uuid                          string
 	)
 	log.SetOutput(colorable.NewColorableStdout())
 	flag.IntVar(&timeout, "t", 45, "自动重新抛竿时间")
-	flag.StringVar(&ip, "ip", "localhost", "服务器IP")
+	flag.StringVar(&ip, "ip", "", "服务器IP")
 	flag.StringVar(&name, "name", "", "游戏ID")
 	flag.IntVar(&port, "port", 25565, "端口，默认25565")
 	flag.StringVar(&account, "account", "", "Mojang账号")
 	flag.StringVar(&authserver, "auth", "https://authserver.mojang.com", "验证服务器（外置登陆）")
 	flag.BoolVar(&realm, "realms", false, "加入领域服")
+	flag.StringVar(&uuid, "uuid", "", "直接根据uuid读取配置文件进入游戏")
 	flag.Parse()
 	log.Println("自动钓鱼机器人启动！")
-	log.Println("机器人版本：1.4-Pre1")
+	log.Println("机器人版本：1.4-Pre3")
 	log.Printf("游戏版本：%s", version)
 	log.Println("基于github.com/Tnze/go-mc")
 	log.Println("作者: Tnze＆BaiMeow")
 	log.Println("-h参数以查看更多用法")
-	if account != "" {
-		//验证登陆
+	if ip == "" {
+		log.Fatal("没有指定服务器IP，请使用-ip指定")
+	}
+	switch {
+	//验证登陆
+	case account != "" && name == "" && uuid == "":
 		authlogin(&account, &authserver)
-	} else if name == "" {
-		//若没有输入登陆信息则读取配置
-		loadconfiglogin()
-	} else {
+		//盗版登陆
+	case account == "" && name != "" && uuid == "":
 		auth.Name = name
 		auth.Authmode = "Offline"
+		//读取配置直接选择账户
+	case account == "" && name == "" && uuid == "":
+		loadconfiglogin()
+		//没有输入登陆信息则读取配置询问账户
+	case account == "" && name == "" && uuid != "":
+		directlogin(uuid)
+	default:
+		log.Fatal("格式错误：请使用以下四种格式之一\n验证登陆：AutoFish -account xxx \n盗版登陆：AutoFish -name xxx\n根据uuid读取配置登陆：AutoFish -uuid xxx\n读取配置询问登陆：AutoFish")
 	}
+
 	c = bot.NewClient()
 	c.Name, c.Auth.UUID, c.AsTk = auth.Name, auth.UUID, auth.AsTk
-	writeconfig()
+	updateconfig()
 	//判断是否领域服登陆，整一个领域ip
-	if realm == true {
+	if realm == true && auth.Authmode != "Offline" {
 		if err := checkrealms(&ip, &port); err != nil {
 			log.Println(err)
 			os.Exit(1)
@@ -310,7 +323,6 @@ func loadconf() config {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("读取到配置文件")
 	return conf
 }
 
@@ -368,7 +380,8 @@ func loadconfiglogin() {
 	}
 }
 
-func writeconfig() {
+//利用auth更新配饰文件
+func updateconfig() {
 	//文件不存在
 	_, err := os.Stat("conf.json")
 	if os.IsNotExist(err) {
@@ -387,41 +400,66 @@ func writeconfig() {
 	var i = 0
 	//判断是否已存在该角色
 	for _, v := range conf.Players {
-		//正版根据UUID判断
-		if v.UUID == auth.UUID {
-			//盗版判断
-			if auth.Authmode == "Offline" {
-				//盗版根据名字判断
-				if auth.Name == v.Name {
-					return
-				}
-				break
-			}
-			//检查AsTk是否过期
-			if v.AsTk == auth.AsTk {
+		//判断验证模式
+		if v.Authmode == "Offline" {
+			//判断是否同一个账号
+			if auth.Name == v.Name {
 				return
 			}
-			replaceConf()
-			return
+		} else {
+			//判断是否同一个账号
+			if auth.UUID == v.UUID {
+				//判断是否需要更新AsTk
+				if auth.AsTk != v.AsTk {
+					break
+				}
+				return
+			}
 		}
 		i++
 	}
-	conf.Players = append(conf.Players, auth)
+	if i == len(conf.Players) {
+		conf.Players = append(conf.Players, auth)
+	} else {
+		conf.Players[i].AsTk = auth.AsTk
+	}
 	//替换配置文件
-	replaceConf()
-}
-
-func replaceConf() {
 	data, _ := json.Marshal(conf)
 	var d1 = []byte(data)
 	if err := os.Remove("conf.json"); err != nil {
 		log.Fatal(err)
 		os.Exit(1)
 	}
-	err := ioutil.WriteFile("conf.json", d1, 0666)
+	err = ioutil.WriteFile("conf.json", d1, 0666)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
-
 	}
+}
+
+func directlogin(uuid string) {
+	log.Println("根据UUID读取配置")
+	conf = loadconf()
+	for _, v := range conf.Players {
+		if v.UUID == uuid {
+			log.Println("在配置文件中找到该角色")
+			auth = v
+			if auth.Authmode == "ThreeAuth" {
+				ygg.AuthURL = fmt.Sprintf("%s/authserver", auth.Authserver)
+				bot.SessionURL = fmt.Sprintf("%s/sessionserver/session/minecraft/join", auth.Authserver)
+			}
+			ok, err := resp.Validate(auth.AsTk)
+			if err != nil {
+				log.Fatal(err)
+				os.Exit(1)
+			}
+			if ok == true {
+				return
+			}
+			log.Println("无效的AsTk")
+			authlogin(&auth.Account, &auth.Authserver)
+			return
+		}
+	}
+	log.Fatal("未记录的UUID，请使用-account添加登录")
 }

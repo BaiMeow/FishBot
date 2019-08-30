@@ -33,10 +33,6 @@ type floats struct {
 	z  float64
 }
 
-//0 mojang
-//1 three
-//2 offline
-
 func main() {
 	var (
 		ip, name, account, authserver string

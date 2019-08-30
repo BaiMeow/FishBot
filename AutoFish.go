@@ -2,36 +2,28 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"flag"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"math"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/AlecAivazis/survey"
+	l "github.com/MscBaiMeow/FishBot/mclogin"
 	"github.com/Tnze/go-mc/bot"
 	"github.com/Tnze/go-mc/chat"
 	_ "github.com/Tnze/go-mc/data/lang/zh-cn"
-	"github.com/Tnze/go-mc/realms"
 	ygg "github.com/Tnze/go-mc/yggdrasil"
 	"github.com/mattn/go-colorable"
 )
-
-const version = "1.14.4"
 
 var (
 	c       *bot.Client
 	watch   chan time.Time
 	timeout int
 	float   floats
-	auth    player
 	resp    *ygg.Access
-	conf    config
+	auth    l.Player
+	version = "1.14.4"
 )
 
 type floats struct {
@@ -39,19 +31,6 @@ type floats struct {
 	x  float64
 	y  float64
 	z  float64
-}
-
-type config struct {
-	Players []player `json:"players"`
-}
-
-type player struct {
-	Name       string `json:"name"`
-	UUID       string `json:"UUID"`
-	AsTk       string `json:"AsTk"`
-	Account    string `json:"account"`
-	Authserver string `json:"authserver"`
-	Authmode   string `json:"authmode"`
 }
 
 //0 mojang
@@ -76,38 +55,38 @@ func main() {
 	flag.StringVar(&uuid, "uuid", "", "直接根据uuid读取配置文件进入游戏")
 	flag.Parse()
 	log.Println("自动钓鱼机器人启动！")
-	log.Println("机器人版本：1.4-Pre4")
+	log.Println("机器人版本：1.4")
 	log.Printf("游戏版本：%s", version)
 	log.Println("基于github.com/Tnze/go-mc")
 	log.Println("作者: Tnze＆BaiMeow")
 	log.Println("-h参数以查看更多用法")
-	if ip == "" {
-		log.Fatal("没有指定服务器IP，请使用-ip指定")
+	if ip == "" && (!realm) {
+		log.Fatal("没有指定服务器IP，请使用-ip指定，或使用-realms进入领域")
 	}
 	switch {
 	//验证登陆
 	case account != "" && name == "" && uuid == "":
-		authlogin(&account, &authserver)
+		l.Authlogin(&account, &authserver, &auth)
 		//盗版登陆
 	case account == "" && name != "" && uuid == "":
 		auth.Name = name
 		auth.Authmode = "Offline"
 		//读取配置直接选择账户
 	case account == "" && name == "" && uuid == "":
-		loadconfiglogin()
+		l.LoadConfiglogin(&auth)
 		//没有输入登陆信息则读取配置询问账户
 	case account == "" && name == "" && uuid != "":
-		directlogin(uuid)
+		l.Directlogin(uuid, &auth)
 	default:
 		log.Fatal("格式错误：请使用以下四种格式之一\n验证登陆：AutoFish -account xxx \n盗版登陆：AutoFish -name xxx\n根据uuid读取配置登陆：AutoFish -uuid xxx\n读取配置询问登陆：AutoFish")
 	}
 
 	c = bot.NewClient()
 	c.Name, c.Auth.UUID, c.AsTk = auth.Name, auth.UUID, auth.AsTk
-	updateconfig()
+	l.UpdateConfig(&auth)
 	//判断是否领域服登陆，整一个领域ip
 	if realm == true && auth.Authmode != "Offline" {
-		if err := checkrealms(&ip, &port); err != nil {
+		if err := l.Checkrealms(&ip, &port, c, &version, &auth); err != nil {
 			log.Println(err)
 			os.Exit(1)
 		}
@@ -147,10 +126,13 @@ func sendMsg() error {
 
 func onGameStart() error {
 	log.Println("Game start")
-
 	watch = make(chan time.Time)
 	go watchDog()
-
+	time.Sleep(time.Second)
+	err := c.Chat("Login with MscFishBot.")
+	if err != nil {
+		return err
+	}
 	return c.UseItem(0)
 }
 
@@ -217,42 +199,12 @@ func onSpawnObj(EID int, UUID [16]byte, Type int, x, y, z float64, Pitch, Yaw fl
 	return nil
 }
 
-func onEntityRelativeMove(EID int, DeltaX, DeltaY, DeltaZ int16) error {
+func onEntityRelativeMove(EID, DeltaX, DeltaY, DeltaZ int) error {
 	if EID == float.ID {
 		float.x += float64(DeltaX) / 4096
 		float.y += float64(DeltaY) / 4096
 		float.z += float64(DeltaZ) / 4096
 	}
-	return nil
-}
-
-func checkrealms(ip *string, port *int) error {
-	var r *realms.Realms
-	r = realms.New(version, c.Name, c.AsTk, c.Auth.UUID)
-	servers, err := r.Worlds()
-	if err != nil {
-		return err
-	}
-	var i, no = 0, 0
-	//list realms
-	for _, v := range servers {
-		fmt.Printf("[%d]"+v.Name+"\n", i)
-		i++
-	}
-	//agree TOS
-	if err := r.TOS(); err != nil {
-		return err
-	}
-	log.Println("请输入领域序号")
-	fmt.Scan(&no)
-	//GET IP
-	ipandport, err := r.Address(servers[no])
-	if err != nil {
-		return err
-	}
-	s := strings.Split(ipandport, ":")
-	*ip = s[0]
-	*port, _ = strconv.Atoi(s[1])
 	return nil
 }
 
@@ -262,204 +214,3 @@ func checkrealms(ip *string, port *int) error {
 //	}
 //	return nil
 //}
-
-func authlogin(account, authserver *string) {
-	if *authserver != "https://authserver.mojang.com" {
-		ygg.AuthURL = fmt.Sprintf("%s/authserver", *authserver)
-		bot.SessionURL = fmt.Sprintf("%s/sessionserver/session/minecraft/join", *authserver)
-		log.Println("第三方验证")
-		auth.Authmode = "ThreeAuth"
-	} else {
-		auth.Authmode = "MojangAuth"
-	}
-	auth.Authserver = *authserver
-	auth.Account = *account
-	password := ""
-	prompt := &survey.Password{
-		Message: "Please type your password",
-	}
-	survey.AskOne(prompt, &password)
-	resp, err := ygg.Authenticate(*account, string(password))
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	log.Println("Auth success")
-	if len(resp.AvailableProfiles()) != 1 {
-		//多用户选择、登陆
-		log.Println("选择角色")
-		for i := 0; i < len(resp.AvailableProfiles()); i++ {
-			fmt.Printf("[%d]"+resp.AvailableProfiles()[i].Name+"\n", i)
-		}
-		var no int
-		log.Println("请输入角色序号")
-		fmt.Scan(&no)
-		auth.Name = resp.AvailableProfiles()[no].Name
-		auth.UUID = resp.AvailableProfiles()[no].ID
-		if err = resp.Refresh(&resp.AvailableProfiles()[no]); err != nil {
-			log.Fatal(err)
-			os.Exit(1)
-		}
-		auth.AsTk = resp.AccessToken()
-		return
-	}
-	//单用户登陆
-	auth.UUID, auth.Name = resp.SelectedProfile()
-	auth.AsTk = resp.AccessToken()
-	return
-}
-
-func loadconf() config {
-	data, err := ioutil.ReadFile("./conf.json")
-	if err != nil {
-		if os.IsNotExist(err) {
-			log.Fatal("配置文件不存在，请使用-account参数添加", err)
-			os.Exit(1)
-		}
-		log.Fatal(err)
-		os.Exit(1)
-	}
-	err = json.Unmarshal(data, &conf)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return conf
-}
-
-func loadconfiglogin() {
-	conf = loadconf()
-	log.Println("load config success")
-	//让玩家选一个
-	var (
-		selected    string
-		i           = 0
-		preSelected []string
-		selectedNo  int
-	)
-	for _, v := range conf.Players {
-		preSelected = append(preSelected, fmt.Sprintf("[%d]", i)+v.Name+"\t"+v.Authmode+"\t"+v.Authserver)
-		i++
-	}
-	prompt := &survey.Select{
-		Message: "Choose a profile:",
-		Options: preSelected,
-	}
-	survey.AskOne(prompt, &selected)
-	selectedNo, _ = strconv.Atoi(selected[1:2])
-	auth = conf.Players[selectedNo]
-	//检查登陆类型
-	switch auth.Authmode {
-	case "Offline":
-		return
-	case "MojangAuth":
-		//检测asTk是否有效
-		ok, err := resp.Validate(auth.AsTk)
-		if err != nil {
-			log.Fatal(err)
-			os.Exit(1)
-		}
-		if ok == true {
-			return
-		}
-		authlogin(&auth.Account, &auth.Authserver)
-	case "ThreeAuth":
-		ygg.AuthURL = fmt.Sprintf("%s/authserver", auth.Authserver)
-		bot.SessionURL = fmt.Sprintf("%s/sessionserver/session/minecraft/join", auth.Authserver)
-		ok, err := resp.Validate(auth.AsTk)
-		if err != nil {
-			log.Fatal(err)
-			os.Exit(1)
-		}
-		if ok == true {
-			return
-		}
-		authlogin(&auth.Account, &auth.Authserver)
-	default:
-		log.Fatal("Unknown authmode")
-		os.Exit(1)
-	}
-}
-
-//利用auth更新配饰文件
-func updateconfig() {
-	//文件不存在
-	_, err := os.Stat("conf.json")
-	if os.IsNotExist(err) {
-		conf.Players = append(conf.Players, auth)
-		data, _ := json.Marshal(conf)
-		var d1 = []byte(data)
-		err := ioutil.WriteFile("conf.json", d1, 0666)
-		if err != nil {
-			log.Fatal(err)
-			os.Exit(1)
-		}
-		return
-	}
-	//文件存在
-	conf = loadconf()
-	var i = 0
-	//判断是否已存在该角色
-	for _, v := range conf.Players {
-		//判断验证模式
-		if v.Authmode == "Offline" {
-			//判断是否同一个账号
-			if auth.Name == v.Name {
-				return
-			}
-		} else {
-			//判断是否同一个账号
-			if auth.UUID == v.UUID {
-				//判断是否需要更新AsTk
-				if auth.AsTk != v.AsTk {
-					break
-				}
-				return
-			}
-		}
-		i++
-	}
-	if i == len(conf.Players) {
-		conf.Players = append(conf.Players, auth)
-	} else {
-		conf.Players[i].AsTk = auth.AsTk
-	}
-	//替换配置文件
-	data, _ := json.Marshal(conf)
-	var d1 = []byte(data)
-	if err := os.Remove("conf.json"); err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
-	err = ioutil.WriteFile("conf.json", d1, 0666)
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
-}
-
-func directlogin(uuid string) {
-	log.Println("根据UUID读取配置")
-	conf = loadconf()
-	for _, v := range conf.Players {
-		if v.UUID == uuid {
-			log.Println("在配置文件中找到该角色")
-			auth = v
-			if auth.Authmode == "ThreeAuth" {
-				ygg.AuthURL = fmt.Sprintf("%s/authserver", auth.Authserver)
-				bot.SessionURL = fmt.Sprintf("%s/sessionserver/session/minecraft/join", auth.Authserver)
-			}
-			ok, err := resp.Validate(auth.AsTk)
-			if err != nil {
-				log.Fatal(err)
-				os.Exit(1)
-			}
-			if ok == true {
-				return
-			}
-			log.Println("无效的AsTk")
-			authlogin(&auth.Account, &auth.Authserver)
-			return
-		}
-	}
-	log.Fatal("未记录的UUID，请使用-account添加登录")
-}

@@ -52,7 +52,7 @@ func main() {
 	flag.BoolVar(&removemode, "remove", false, "删除配置模式")
 	flag.Parse()
 	log.Println("自动钓鱼机器人启动！")
-	log.Println("机器人版本：1.4")
+	log.Println("机器人版本：1.4.1")
 	log.Printf("游戏版本：%s", version)
 	log.Println("基于github.com/Tnze/go-mc")
 	log.Println("作者: Tnze＆BaiMeow")

@@ -80,10 +80,8 @@ func Authlogin(account, authserver *string, auth *Player) {
 			log.Fatal(err)
 			os.Exit(1)
 		}
-		auth.AsTk = resp.AccessToken()
-		return
 	}
-	//单用户登陆
+	//安排登陆账户
 	auth.UUID, auth.Name = resp.SelectedProfile()
 	auth.AsTk = resp.AccessToken()
 	return

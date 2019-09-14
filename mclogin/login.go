@@ -58,9 +58,9 @@ func Authlogin(account, authserver *string, auth *Player) {
 	if len(resp.AvailableProfiles()) != 1 {
 		//多用户选择、登陆
 		var (
-			no, selectedNo int
-			preSelected    []string
-			selected       string
+			no          int
+			preSelected []string
+			selected    string
 		)
 		//把安排survey包的单选中的选项所需要的切片搞出来
 		for _, v := range resp.AvailableProfiles() {
@@ -72,13 +72,14 @@ func Authlogin(account, authserver *string, auth *Player) {
 			Message: "选择一个角色:",
 			Options: preSelected,
 		}
-		survey.AskOne(prompt, selected)
+		survey.AskOne(prompt, &selected)
 		//获得选中的用户的序号
-		fmt.Sscanf(selected, "[%d]", &selectedNo)
+		fmt.Sscanf(selected, "[%d]", &no)
 		//refresh刷新获得该用户AsTk
-		if err = resp.Refresh(&resp.AvailableProfiles()[selectedNo]); err != nil {
+		if err = resp.Refresh(&resp.AvailableProfiles()[no]); err != nil {
 			log.Fatal(err)
 			os.Exit(1)
+
 		}
 	}
 	//安排登陆账户

@@ -69,7 +69,7 @@ func Authlogin(account, authserver *string, auth *Player) {
 		}
 		//让玩家进行选择
 		prompt := &survey.Select{
-			Message: "Choose a Profile:",
+			Message: "选择一个角色:",
 			Options: preSelected,
 		}
 		survey.AskOne(prompt, selected)
@@ -110,7 +110,7 @@ func Loadconf() Config {
 //LoadConfiglogin can load config and ask you to choose a profile and login
 func LoadConfiglogin(auth *Player) {
 	var conf = Loadconf()
-	log.Println("load Config success")
+	log.Println("成功读取配置")
 	//让玩家选一个
 	var (
 		selected    string
@@ -123,7 +123,7 @@ func LoadConfiglogin(auth *Player) {
 		i++
 	}
 	prompt := &survey.Select{
-		Message: "Choose a account:",
+		Message: "选择一个账户:",
 		Options: preSelected,
 	}
 	survey.AskOne(prompt, &selected)
@@ -157,13 +157,13 @@ func LoadConfiglogin(auth *Player) {
 		}
 		Authlogin(&auth.Account, &auth.Authserver, auth)
 	default:
-		log.Fatal("Unknown authmode")
+		log.Fatal("未知验证模式")
 		os.Exit(1)
 	}
 }
 
-//UpdateConfig is used to update the config file with a provided profile
-func UpdateConfig(auth *Player) {
+//AddtoConfig is used to update the config file with a provided profile
+func AddtoConfig(auth *Player) {
 	//文件不存在
 	_, err := os.Stat("conf.json")
 	if os.IsNotExist(err) {
@@ -245,4 +245,46 @@ func Directlogin(uuid string, auth *Player) {
 		}
 	}
 	log.Fatal("未记录的UUID，请使用-account添加登录")
+}
+
+//Configrm means remove-mode
+func Configrm() {
+	conf := Loadconf()
+	var (
+		selected    string
+		i           = 0
+		preSelected []string
+		selectedNo  int
+	)
+	for _, v := range conf.Players {
+		preSelected = append(preSelected, fmt.Sprintf("[%d]", i)+v.Name+"\t"+v.Authmode+"\t"+v.Authserver)
+		i++
+	}
+	prompt := &survey.Select{
+		Message: "选择你要删除的账户:",
+		Options: preSelected,
+	}
+	survey.AskOne(prompt, &selected)
+	fmt.Sscanf(selected, "[%d]", &selectedNo)
+	conf.Players = append(conf.Players[:selectedNo], conf.Players[selectedNo+1:]...)
+	data, _ := json.Marshal(conf)
+	var d1 = []byte(data)
+	if err := os.Remove("conf.json"); err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+	err := ioutil.WriteFile("conf.json", d1, 0666)
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+	name := false
+	prompt1 := &survey.Confirm{
+		Message: "已删除选择账户，继续删除账户？",
+	}
+	survey.AskOne(prompt1, &name)
+	if name == true {
+		Configrm()
+	}
+	os.Exit(1)
 }

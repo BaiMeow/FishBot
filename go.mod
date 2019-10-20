@@ -3,8 +3,7 @@ module github.com/MscBaiMeow/FishBot
 go 1.12
 
 require (
-	github.com/AlecAivazis/survey v0.0.0-00010101000000-000000000000
-	github.com/AlecAivazis/survey/v2 v2.0.4 // indirect
+	github.com/AlecAivazis/survey/v2 v2.0.4
 	github.com/Netflix/go-expect v0.0.0-20190729225929-0e00d9168667 // indirect
 	github.com/Tnze/go-mc v1.14.4
 	github.com/creack/pty v1.1.9 // indirect
@@ -19,7 +18,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.3 // indirect
 )
-
-replace github.com/AlecAivazis/survey => github.com/AlecAivazis/survey/v2 v2.0.4
 
 replace github.com/Tnze/go-mc => github.com/MscBaiMeow/go-mc v1.14.4-0.20191002033441-ed92744d2705

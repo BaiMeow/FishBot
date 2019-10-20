@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/MscBaiMeow/FishBot/net"
+
 	l "github.com/MscBaiMeow/FishBot/mclogin"
 	"github.com/Tnze/go-mc/bot"
 	"github.com/Tnze/go-mc/chat"
@@ -60,6 +62,7 @@ func main() {
 	if ip == "" && (!realm && !removemode) {
 		log.Fatal("没有指定服务器IP，请使用-ip指定，或使用-realms进入领域")
 	}
+	net.CheckSRV(&ip, &port)
 	switch {
 	//验证登陆
 	case account != "" && name == "" && uuid == "" && removemode == false:

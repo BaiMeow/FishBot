@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/AlecAivazis/survey"
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/Tnze/go-mc/bot"
 	"github.com/Tnze/go-mc/realms"
 )

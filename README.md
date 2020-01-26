@@ -12,20 +12,28 @@ Fishing in Minecraft automatically
 
   -account string
 ​        Mojang账号
+
   -auth string
 ​        验证服务器（外置登陆） (default "https://authserver.mojang.com")
+
   -ip string
 ​        服务器IP (default "localhost")
+
   -name string
 ​        游戏ID
+
   -passwd string
 ​        Mojang账户密码
+
   -port int
 ​        端口，默认25565 (default 25565)
+
   -realms
 ​        加入领域服
+
   -t int
 ​        自动重新抛竿时间 (default 45)
+
 
 如果你正确打开的话，接下来会有指示的
 
@@ -33,7 +41,9 @@ Fishing in Minecraft automatically
 
 ------
 
-不支持SRV解析，请自行解析
+~~不支持SRV解析，请自行解析~~
+
+目前优先解析SRV
 
 具体方法GUI版本的readme看去
 

@@ -25,7 +25,7 @@ var (
 	float   floats
 	resp    *ygg.Access
 	auth    l.Player
-	version = "1.14.4"
+	version = "1.15.2"
 )
 
 type floats struct {
@@ -190,7 +190,7 @@ func watchDog() {
 }
 
 func onSpawnObj(EID int, UUID [16]byte, Type int, x, y, z float64, Pitch, Yaw float32, Data int, VelocityX, VelocitY, VelocitZ int16) error {
-	if Type == 101 {
+	if Type == 102 {
 		if Data == c.EntityID {
 			//log.Println("Spawn your Float")
 			float = floats{EID, x, y, z}

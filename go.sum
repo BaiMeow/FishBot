@@ -1,7 +1,7 @@
 github.com/AlecAivazis/survey/v2 v2.0.4 h1:qzXnJSzXEvmUllWqMBWpZndvT2YfoAUzAMvZUax3L2M=
 github.com/AlecAivazis/survey/v2 v2.0.4/go.mod h1:WYBhg6f0y/fNYUuesWQc0PKbJcEliGcYHB9sNT3Bg74=
-github.com/MscBaiMeow/go-mc v1.14.4-0.20191002033441-ed92744d2705 h1:MtNcP/intEzUHAbCyD7TNXoPsEDP2nUK714VMzYs72M=
-github.com/MscBaiMeow/go-mc v1.14.4-0.20191002033441-ed92744d2705/go.mod h1:1m/EKIN1b/8WC0NwzbJXS9FYHG2I0hEH12ewt29kqcI=
+github.com/MscBaiMeow/go-mc v1.15.2 h1:ya1h5v4aqUf8AyMcmOXjiDjjdw5qS4K/JR6SsURwnmY=
+github.com/MscBaiMeow/go-mc v1.15.2/go.mod h1:1m/EKIN1b/8WC0NwzbJXS9FYHG2I0hEH12ewt29kqcI=
 github.com/Netflix/go-expect v0.0.0-20180615182759-c93bf25de8e8/go.mod h1:oX5x61PbNXchhh0oikYAH+4Pcfw5LKv21+Jnpr6r6Pc=
 github.com/Netflix/go-expect v0.0.0-20190729225929-0e00d9168667 h1:l2RCK7mjLhjfZRIcCXTVHI34l67IRtKASBjusViLzQ0=
 github.com/Netflix/go-expect v0.0.0-20190729225929-0e00d9168667/go.mod h1:oX5x61PbNXchhh0oikYAH+4Pcfw5LKv21+Jnpr6r6Pc=

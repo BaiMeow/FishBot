@@ -18,7 +18,7 @@ func Checkrealms(ip *string, port *int, c *bot.Client, version *string, auth *Pl
 	if err != nil {
 		return err
 	}
-	var i, no = 0, 0
+	var i = 0
 	//list realms
 
 	//agree TOS
@@ -41,7 +41,7 @@ func Checkrealms(ip *string, port *int, c *bot.Client, version *string, auth *Pl
 	survey.AskOne(prompt, &selected)
 	fmt.Sscanf(selected, "[%d]", &selectedNo)
 	//GET IP
-	ipandport, err := r.Address(servers[no])
+	ipandport, err := r.Address(servers[selectedNo])
 	if err != nil {
 		return err
 	}

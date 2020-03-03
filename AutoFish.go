@@ -140,7 +140,7 @@ func onGameStart() error {
 
 func onSound(name string, category int, x, y, z float64, volume, pitch float32) error {
 	if name == "entity.fishing_bobber.splash" {
-		if distance(x, y, z) < 1 {
+		if distance(x, y, z) < 5 {
 			if err := c.UseItem(0); err != nil { //retrieve
 				return err
 			}

@@ -14,12 +14,12 @@ import (
 
 //Player is a profile of aplayer.
 type Player struct {
-	Name       string `json:"name"`
-	UUID       string `json:"UUID"`
-	AsTk       string `json:"AsTk"`
-	Account    string `json:"account"`
-	Authserver string `json:"authserver"`
-	Authmode   string `json:"authmode"`
+	Name       string     `json:"name"`
+	UUID       string     `json:"UUID"`
+	Tokens     ygg.Tokens `json:"Tokens"`
+	Account    string     `json:"account"`
+	Authserver string     `json:"authserver"`
+	Authmode   string     `json:"authmode"`
 }
 
 //Config used to restore config in the program
@@ -28,8 +28,8 @@ type Config struct {
 }
 
 var (
-	conf Config
-	resp *ygg.Access
+	conf   Config
+	access ygg.Access
 )
 
 //Authlogin is used when you need to login with passwd
@@ -49,13 +49,13 @@ func Authlogin(account, authserver *string, auth *Player) {
 		Message: "Please type your password",
 	}
 	survey.AskOne(prompt, &password)
-	resp, err := ygg.Authenticate(*account, string(password))
+	access, err := ygg.Authenticate(*account, string(password))
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 	log.Println("Auth success")
-	if len(resp.AvailableProfiles()) != 1 {
+	if len(access.AvailableProfiles()) != 1 {
 		//多用户选择、登陆
 		var (
 			no          int
@@ -63,7 +63,7 @@ func Authlogin(account, authserver *string, auth *Player) {
 			selected    string
 		)
 		//把安排survey包的单选中的选项所需要的切片搞出来
-		for _, v := range resp.AvailableProfiles() {
+		for _, v := range access.AvailableProfiles() {
 			preSelected = append(preSelected, fmt.Sprintf("[%d]", no)+v.Name)
 			no++
 		}
@@ -76,15 +76,15 @@ func Authlogin(account, authserver *string, auth *Player) {
 		//获得选中的用户的序号
 		fmt.Sscanf(selected, "[%d]", &no)
 		//refresh刷新获得该用户AsTk
-		if err = resp.Refresh(&resp.AvailableProfiles()[no]); err != nil {
+		if err = access.Refresh(&access.AvailableProfiles()[no]); err != nil {
 			log.Fatal(err)
 			os.Exit(1)
 
 		}
 	}
 	//安排登陆账户
-	auth.UUID, auth.Name = resp.SelectedProfile()
-	auth.AsTk = resp.AccessToken()
+	auth.UUID, auth.Name = access.SelectedProfile()
+	auth.Tokens = access.GetTokens()
 	return
 }
 
@@ -134,7 +134,8 @@ func LoadConfiglogin(auth *Player) {
 		return
 	case "MojangAuth":
 		//检测asTk是否有效
-		ok, err := resp.Validate(auth.AsTk)
+		access.SetTokens(auth.Tokens)
+		ok, err := access.Validate()
 		if err != nil {
 			log.Fatal(err)
 			os.Exit(1)
@@ -146,7 +147,8 @@ func LoadConfiglogin(auth *Player) {
 	case "ThreeAuth":
 		ygg.AuthURL = fmt.Sprintf("%s/authserver", auth.Authserver)
 		bot.SessionURL = fmt.Sprintf("%s/sessionserver/session/minecraft/join", auth.Authserver)
-		ok, err := resp.Validate(auth.AsTk)
+		access.SetTokens(auth.Tokens)
+		ok, err := access.Validate()
 		if err != nil {
 			log.Fatal(err)
 			os.Exit(1)
@@ -191,7 +193,7 @@ func AddtoConfig(auth *Player) {
 			//判断是否同一个账号
 			if auth.UUID == v.UUID {
 				//判断是否需要更新AsTk
-				if auth.AsTk != v.AsTk {
+				if auth.Tokens != v.Tokens {
 					break
 				}
 				return
@@ -202,7 +204,7 @@ func AddtoConfig(auth *Player) {
 	if i == len(conf.Players) {
 		conf.Players = append(conf.Players, *auth)
 	} else {
-		conf.Players[i].AsTk = auth.AsTk
+		conf.Players[i].Tokens = auth.Tokens
 	}
 	//替换配置文件
 	data, _ := json.Marshal(conf)
@@ -230,7 +232,8 @@ func Directlogin(uuid string, auth *Player) {
 				ygg.AuthURL = fmt.Sprintf("%s/authserver", auth.Authserver)
 				bot.SessionURL = fmt.Sprintf("%s/sessionserver/session/minecraft/join", auth.Authserver)
 			}
-			ok, err := resp.Validate(auth.AsTk)
+			access.SetTokens(auth.Tokens)
+			ok, err := access.Validate()
 			if err != nil {
 				log.Fatal(err)
 				os.Exit(1)

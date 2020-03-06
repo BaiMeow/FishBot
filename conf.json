@@ -1,36 +1,15 @@
 {
     "players": [
         {
-            "name": "bs1",
-            "UUID": "",
-            "AsTk": "",
-            "account": "",
-            "authserver": "",
-            "authmode": "Offline"
-        },
-        {
             "name": "Msc__BaiMeow",
             "UUID": "1ef88718148741cb8f5770e01fd55ef7",
-            "AsTk": "ffffffffffffffffffffffffffffffff",
-            "account": "100000@qq.com",
+            "Tokens": {
+                "accessToken": "eyJhbpciOiJIUzI1NiJ9.eyJzdWmiOiIxNTBiY2d0N2Q4MGUxZmNkOWUwZDM5YmY1Yzk0NzhhMiIsInlnZ3QiOiI5NzViNDgwNTdhMDg0ZDcyYjk0N2I1NzQxOTBhYWRhYyIsInNwciI6IjFlZjg4NzE4MTQ4NzQxY2I4ZjU3NzBlMDFmZDU1ZWY3IiwiaXNzIjoiWWdnZHJhc2lsLUF1dGgiLCJleHAiOjE1ODM2MzIzNTYsImlhdCI6MTU4MzQ1OTU1Nn0.WMtYlGEhIv3Ex4roPEmbEL5zdI-i1IfypQ1nr5r1Vo4",
+                "clientToken": "1ca41fra-6f49-4b67-8bb5-4c432be98633"
+            },
+            "account": "10000@qq.com",
             "authserver": "https://authserver.mojang.com",
             "authmode": "MojangAuth"
-        },
-        {
-            "name": "bs2",
-            "UUID": "",
-            "AsTk": "",
-            "account": "",
-            "authserver": "",
-            "authmode": "Offline"
-        },
-        {
-            "name": "bs3",
-            "UUID": "",
-            "AsTk": "",
-            "account": "",
-            "authserver": "",
-            "authmode": "Offline"
         }
     ]
 }

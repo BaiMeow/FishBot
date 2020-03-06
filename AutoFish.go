@@ -54,7 +54,7 @@ func main() {
 	flag.BoolVar(&removemode, "remove", false, "删除配置模式")
 	flag.Parse()
 	log.Println("自动钓鱼机器人启动！")
-	log.Println("机器人版本：1.4.3.1")
+	log.Println("机器人版本：1.4.4")
 	log.Printf("游戏版本：%s", version)
 	log.Println("基于github.com/Tnze/go-mc")
 	log.Println("作者: Tnze＆BaiMeow")
@@ -84,7 +84,7 @@ func main() {
 	}
 
 	c = bot.NewClient()
-	c.Name, c.Auth.UUID, c.AsTk = auth.Name, auth.UUID, auth.AsTk
+	c.Name, c.Auth.UUID, c.AsTk = auth.Name, auth.UUID, auth.Tokens.AccessToken
 	l.AddtoConfig(&auth)
 	//判断是否领域服登陆，整一个领域ip
 	if realm && auth.Authmode != "Offline" {

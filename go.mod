@@ -19,4 +19,4 @@ require (
 	gopkg.in/yaml.v2 v2.2.3 // indirect
 )
 
-replace github.com/Tnze/go-mc => github.com/MscBaiMeow/go-mc v1.14.5-0.20200306020755-789ec6ee2af3
+replace github.com/Tnze/go-mc => github.com/MscBaiMeow/go-mc v1.15.3-0.20200306020755-789ec6ee2af3

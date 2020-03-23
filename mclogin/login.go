@@ -238,11 +238,23 @@ func Directlogin(uuid string, auth *Player) {
 				log.Fatal(err)
 				os.Exit(1)
 			}
-			if ok == true {
+			if ok != true {
+				log.Println("无效的AccessToken")
+				//refresh
+				log.Println("正在刷新AccessToken")
+				err = access.Refresh(&ygg.Profile{
+					ID:   auth.UUID,
+					Name: auth.Name,
+				})
+				//救不了,只能重新登录
+				if err != nil {
+					log.Println("刷新AccessToken失败，请重新输入密码")
+					Authlogin(&auth.Account, &auth.Authserver, auth)
+					return
+				}
+				auth.Tokens = access.GetTokens()
 				return
 			}
-			log.Println("无效的AsTk")
-			Authlogin(&auth.Account, &auth.Authserver, auth)
 			return
 		}
 	}

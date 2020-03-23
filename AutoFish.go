@@ -145,7 +145,7 @@ func onSound(name string, category int, x, y, z float64, volume, pitch float32) 
 				return err
 			}
 			log.Println("gra~")
-			time.Sleep(time.Millisecond * time.Duration(timeout*7))
+			time.Sleep(time.Millisecond * time.Duration(timeout*8))
 			if err := c.UseItem(0); err != nil { //throw
 				return err
 			}

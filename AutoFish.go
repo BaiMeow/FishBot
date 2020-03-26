@@ -182,6 +182,8 @@ func watchDog() {
 		case <-watch:
 		case <-to.C:
 			log.Println("rethrow")
+			c.SelectItem((c.HeldItem + 1) % 9)
+			c.SelectItem((c.HeldItem - 1) % 9)
 			if err := c.UseItem(0); err != nil {
 				panic(err)
 			}

@@ -115,12 +115,12 @@ func main() {
 	}
 }
 func sendMsg() error {
-	var send string
+	var send []byte
 	for {
 		//fmt.Scanln(&send)
 		Reader := bufio.NewReader(os.Stdin)
-		send, _ = Reader.ReadString('\n')
-		if err := c.Chat(send); err != nil {
+		send, _, _ = Reader.ReadLine()
+		if err := c.Chat(string(send)); err != nil {
 			return err
 		}
 	}

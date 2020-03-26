@@ -54,7 +54,7 @@ func main() {
 	flag.BoolVar(&removemode, "remove", false, "删除配置模式")
 	flag.Parse()
 	log.Println("自动钓鱼机器人启动！")
-	log.Println("机器人版本：1.4.6")
+	log.Println("机器人版本：1.5.0")
 	log.Printf("游戏版本：%s", version)
 	log.Println("基于github.com/Tnze/go-mc")
 	log.Println("作者: Tnze＆BaiMeow")
@@ -177,15 +177,23 @@ func onDisconnect(c chat.Message) error {
 
 func watchDog() {
 	to := time.NewTimer(time.Second * time.Duration(timeout))
+	shouldHeld := c.HeldItem
+	nextSlot := (shouldHeld + 1) % 9
 	for {
 		select {
 		case <-watch:
 		case <-to.C:
 			log.Println("rethrow")
-			c.SelectItem((c.HeldItem + 1) % 9)
-			c.SelectItem((c.HeldItem - 1) % 9)
+			if err := c.SelectItem(nextSlot); err != nil {
+				log.Printf("fail to select item:%s", err.Error())
+			}
+			time.Sleep(time.Millisecond * 300)
+			if err := c.SelectItem(shouldHeld); err != nil {
+				log.Printf("fail to select item:%s", err.Error())
+			}
+			time.Sleep(time.Millisecond * 300)
 			if err := c.UseItem(0); err != nil {
-				panic(err)
+				log.Printf("fail to use item:%s", err.Error())
 			}
 		}
 		to.Reset(time.Second * time.Duration(timeout))

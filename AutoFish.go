@@ -84,6 +84,7 @@ func main() {
 	}
 
 	c = bot.NewClient()
+	c.SettingMapRead(false)
 	c.Name, c.Auth.UUID, c.AsTk = auth.Name, auth.UUID, auth.Tokens.AccessToken
 	l.AddtoConfig(&auth)
 	//判断是否领域服登陆，整一个领域ip

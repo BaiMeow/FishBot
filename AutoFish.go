@@ -189,12 +189,13 @@ func watchDog() {
 			}
 			time.Sleep(time.Millisecond * 300)
 			if err := c.SelectItem(shouldHeld); err != nil {
-				log.Printf("fail to select item:%s", err.Error())
+				panic(err)
 			}
 			time.Sleep(time.Millisecond * 300)
 			if err := c.UseItem(0); err != nil {
 				log.Printf("fail to use item:%s", err.Error())
 			}
+			recover()
 		}
 		to.Reset(time.Second * time.Duration(timeout))
 	}

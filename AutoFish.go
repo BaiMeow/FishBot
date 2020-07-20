@@ -3,12 +3,14 @@ package main
 import (
 	"bufio"
 	"flag"
+	"fmt"
 	"log"
 	"math"
 	"os"
 	"time"
 
 	"github.com/MscBaiMeow/FishBot/net"
+	"github.com/google/uuid"
 
 	l "github.com/MscBaiMeow/FishBot/mclogin"
 	"github.com/Tnze/go-mc/bot"
@@ -25,7 +27,8 @@ var (
 	float   floats
 	resp    *ygg.Access
 	auth    l.Player
-	version = "1.15.2"
+	version = "1.16.1"
+	waiting bool
 )
 
 type floats struct {
@@ -54,7 +57,7 @@ func main() {
 	flag.BoolVar(&removemode, "remove", false, "删除配置模式")
 	flag.Parse()
 	log.Println("自动钓鱼机器人启动！")
-	log.Println("机器人版本：1.5.0")
+	log.Println("机器人版本：1.5.1")
 	log.Printf("游戏版本：%s", version)
 	log.Println("基于github.com/Tnze/go-mc")
 	log.Println("作者: Tnze＆BaiMeow")
@@ -108,6 +111,7 @@ func main() {
 	c.Events.SoundPlay = onSound
 	c.Events.SpawnObj = onSpawnObj
 	c.Events.EntityRelativeMove = onEntityRelativeMove
+	//c.Events.Particle = onParticle
 	//c.Events.WindowsItemChange = onWindowsItemChange
 	//JoinGame
 	err = c.HandleGame()
@@ -140,33 +144,25 @@ func onGameStart() error {
 }
 
 func onSound(name string, category int, x, y, z float64, volume, pitch float32) error {
-	if name == "entity.fishing_bobber.splash" {
-		if distance(x, y, z) < 5 {
-			if err := c.UseItem(0); err != nil { //retrieve
-				return err
-			}
-			log.Println("gra~")
-			time.Sleep(time.Millisecond * time.Duration(timeout*8))
-			if err := c.UseItem(0); err != nil { //throw
-				return err
-			}
-			watch <- time.Now()
-		} else {
-			log.Println("远处的钓鱼声")
-		}
+	if name != "entity.fishing_bobber.splash" {
+		return nil
 	}
-	return nil
+	fmt.Println(distance(x, z))
+	if distance(x, z) > 5 {
+		log.Println("远处的钓鱼声")
+		return nil
+	}
+	return getFish()
 }
 
-func distance(x, y, z float64) float64 {
+func distance(x, z float64) float64 {
 	x0 := float.x - x
-	y0 := float.y - y
 	z0 := float.z - z
-	return math.Sqrt(x0*x0 + y0*y0 + z0*z0)
+	return math.Sqrt(x0*x0 + z0*z0)
 }
 
-func onChatMsg(c chat.Message, pos byte) error {
-	log.Println("Chat:", c.String())
+func onChatMsg(msg chat.Message, pos byte, sender uuid.UUID) error {
+	log.Println("Chat:", msg.String())
 	return nil
 }
 
@@ -177,37 +173,37 @@ func onDisconnect(c chat.Message) error {
 
 func watchDog() {
 	to := time.NewTimer(time.Second * time.Duration(timeout))
-	shouldHeld := c.HeldItem
-	nextSlot := (shouldHeld + 1) % 9
+	fmt.Println("slot", c.HeldItem)
 	for {
 		select {
 		case <-watch:
 		case <-to.C:
 			log.Println("rethrow")
-			if err := c.SelectItem(nextSlot); err != nil {
+			Held := c.HeldItem
+			if err := c.SelectItem((Held + 1) % 9); err != nil {
 				log.Printf("fail to select item:%s", err.Error())
 			}
-			time.Sleep(time.Millisecond * 300)
-			if err := c.SelectItem(shouldHeld); err != nil {
+			time.Sleep(time.Millisecond * 500)
+			if err := c.SelectItem(Held); err != nil {
 				panic(err)
 			}
-			time.Sleep(time.Millisecond * 300)
+			time.Sleep(time.Millisecond * 500)
 			if err := c.UseItem(0); err != nil {
 				log.Printf("fail to use item:%s", err.Error())
 			}
-			recover()
 		}
 		to.Reset(time.Second * time.Duration(timeout))
 	}
 }
 
 func onSpawnObj(EID int, UUID [16]byte, Type int, x, y, z float64, Pitch, Yaw float32, Data int, VelocityX, VelocitY, VelocitZ int16) error {
-	if Type == 102 {
+	fmt.Println(Type)
+	if Type == 106 {
 		if Data == c.EntityID {
-			//log.Println("Spawn your Float")
+			log.Println("Spawn your Float")
 			float = floats{EID, x, y, z}
-			//} else {
-			//	log.Println("Other's Float")
+		} else {
+			log.Println("Other's Float")
 		}
 	}
 	return nil
@@ -218,6 +214,7 @@ func onEntityRelativeMove(EID, DeltaX, DeltaY, DeltaZ int) error {
 		float.x += float64(DeltaX) / 4096
 		float.y += float64(DeltaY) / 4096
 		float.z += float64(DeltaZ) / 4096
+		fmt.Println(float)
 	}
 	return nil
 }
@@ -228,3 +225,32 @@ func onEntityRelativeMove(EID, DeltaX, DeltaY, DeltaZ int) error {
 //	}
 //	return nil
 //}
+
+func onParticle(ID int, longDistance bool, x, y, z float64, offsetX, offsetY, offsetZ float32, particleData float32, particleCount int) error {
+	if ID != 25 || waiting {
+		return nil
+	}
+	waiting = true
+	fmt.Printf("X:%f Y:%f Z:%f Distance:%f\n", x, y, z, distance(x, z))
+	go func() {
+		time.Sleep(4 * time.Second)
+		if err := getFish(); err != nil {
+			log.Print(err)
+		}
+		waiting = false
+	}()
+	return nil
+}
+
+func getFish() error {
+	if err := c.UseItem(0); err != nil { //retrieve
+		return err
+	}
+	log.Println("gra~")
+	time.Sleep(time.Millisecond * time.Duration(timeout*8))
+	if err := c.UseItem(0); err != nil { //throw
+		return err
+	}
+	watch <- time.Now()
+	return nil
+}

@@ -3,20 +3,17 @@ module github.com/MscBaiMeow/FishBot
 go 1.12
 
 require (
-	github.com/AlecAivazis/survey/v2 v2.0.4
-	github.com/Netflix/go-expect v0.0.0-20190729225929-0e00d9168667 // indirect
-	github.com/Tnze/go-mc v1.15.2-0.20200129055757-72c389c86fc2
-	github.com/creack/pty v1.1.9 // indirect
+	github.com/AlecAivazis/survey/v2 v2.0.8
+	github.com/Netflix/go-expect v0.0.0-20200312175327-da48e75238e2 // indirect
+	github.com/Tnze/go-mc v1.15.2
+	github.com/google/uuid v1.1.1
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
-	github.com/kr/pretty v0.1.0 // indirect
-	github.com/kr/pty v1.1.8 // indirect
-	github.com/mattn/go-colorable v0.1.4
-	github.com/mattn/go-isatty v0.0.9 // indirect
-	github.com/stretchr/testify v1.4.0 // indirect
-	golang.org/x/crypto v0.0.0-20191001170739-f9e2070545dc // indirect
-	golang.org/x/sys v0.0.0-20191001151750-bb3f8db39f24 // indirect
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
-	gopkg.in/yaml.v2 v2.2.3 // indirect
+	github.com/mattn/go-colorable v0.1.2
+	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899 // indirect
+	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
+	golang.org/x/text v0.3.3 // indirect
 )
 
-replace github.com/Tnze/go-mc => github.com/MscBaiMeow/go-mc v1.15.3-0.20200326061811-fd54bf5fcfcd
+// replace github.com/Tnze/go-mc => github.com/MscBaiMeow/go-mc v1.15.3-0.20200709101511-c2c96826e352
+
+replace github.com/Tnze/go-mc => D:\src\MscBaiMeow\go-mc

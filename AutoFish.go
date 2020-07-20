@@ -147,7 +147,7 @@ func onSound(name string, category int, x, y, z float64, volume, pitch float32) 
 	if name != "entity.fishing_bobber.splash" {
 		return nil
 	}
-	fmt.Println(distance(x, z))
+	//	fmt.Println(distance(x, z))
 	if distance(x, z) > 5 {
 		log.Println("远处的钓鱼声")
 		return nil
@@ -173,7 +173,6 @@ func onDisconnect(c chat.Message) error {
 
 func watchDog() {
 	to := time.NewTimer(time.Second * time.Duration(timeout))
-	fmt.Println("slot", c.HeldItem)
 	for {
 		select {
 		case <-watch:
@@ -197,13 +196,13 @@ func watchDog() {
 }
 
 func onSpawnObj(EID int, UUID [16]byte, Type int, x, y, z float64, Pitch, Yaw float32, Data int, VelocityX, VelocitY, VelocitZ int16) error {
-	fmt.Println(Type)
+	//	fmt.Println(Type)
 	if Type == 106 {
 		if Data == c.EntityID {
-			log.Println("Spawn your Float")
+			//	log.Println("Spawn your Float")
 			float = floats{EID, x, y, z}
-		} else {
-			log.Println("Other's Float")
+			//	} else {
+			//	log.Println("Other's Float")
 		}
 	}
 	return nil
@@ -214,7 +213,7 @@ func onEntityRelativeMove(EID, DeltaX, DeltaY, DeltaZ int) error {
 		float.x += float64(DeltaX) / 4096
 		float.y += float64(DeltaY) / 4096
 		float.z += float64(DeltaZ) / 4096
-		fmt.Println(float)
+		//		fmt.Println(float)
 	}
 	return nil
 }

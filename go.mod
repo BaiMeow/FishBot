@@ -14,6 +14,6 @@ require (
 	golang.org/x/text v0.3.3 // indirect
 )
 
-// replace github.com/Tnze/go-mc => github.com/MscBaiMeow/go-mc v1.15.3-0.20200709101511-c2c96826e352
+replace github.com/Tnze/go-mc => github.com/MscBaiMeow/go-mc v1.15.3-0.20200720014825-3eb7c12f5db2
 
-replace github.com/Tnze/go-mc => D:\src\MscBaiMeow\go-mc
+//replace github.com/Tnze/go-mc => D:\src\MscBaiMeow\go-mc

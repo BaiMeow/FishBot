@@ -3,15 +3,14 @@ package main
 import (
 	"bufio"
 	"flag"
-	"fmt"
 	"log"
-	"math"
 	"os"
 	"time"
 
 	"github.com/MscBaiMeow/FishBot/net"
 	"github.com/google/uuid"
 
+	"github.com/MscBaiMeow/FishBot/float"
 	l "github.com/MscBaiMeow/FishBot/mclogin"
 	"github.com/Tnze/go-mc/bot"
 	"github.com/Tnze/go-mc/chat"
@@ -24,19 +23,11 @@ var (
 	c       *bot.Client
 	watch   chan time.Time
 	timeout int
-	float   floats
 	resp    *ygg.Access
 	auth    l.Player
 	version = "1.16.1"
 	waiting bool
 )
-
-type floats struct {
-	ID int
-	x  float64
-	y  float64
-	z  float64
-}
 
 func main() {
 	var (
@@ -111,8 +102,7 @@ func main() {
 	c.Events.SoundPlay = onSound
 	c.Events.SpawnObj = onSpawnObj
 	c.Events.EntityRelativeMove = onEntityRelativeMove
-	//c.Events.Particle = onParticle
-	//c.Events.WindowsItemChange = onWindowsItemChange
+
 	//JoinGame
 	err = c.HandleGame()
 	if err != nil {
@@ -148,17 +138,11 @@ func onSound(name string, category int, x, y, z float64, volume, pitch float32) 
 		return nil
 	}
 	//	fmt.Println(distance(x, z))
-	if distance(x, z) > 5 {
+	if float.Distance(x, z) > 5 {
 		log.Println("远处的钓鱼声")
 		return nil
 	}
 	return getFish()
-}
-
-func distance(x, z float64) float64 {
-	x0 := float.x - x
-	z0 := float.z - z
-	return math.Sqrt(x0*x0 + z0*z0)
 }
 
 func onChatMsg(msg chat.Message, pos byte, sender uuid.UUID) error {
@@ -200,7 +184,7 @@ func onSpawnObj(EID int, UUID [16]byte, Type int, x, y, z float64, Pitch, Yaw fl
 	if Type == 106 {
 		if Data == c.EntityID {
 			//	log.Println("Spawn your Float")
-			float = floats{EID, x, y, z}
+			float.Set(EID, x, y, z)
 			//	} else {
 			//	log.Println("Other's Float")
 		}
@@ -209,35 +193,10 @@ func onSpawnObj(EID int, UUID [16]byte, Type int, x, y, z float64, Pitch, Yaw fl
 }
 
 func onEntityRelativeMove(EID, DeltaX, DeltaY, DeltaZ int) error {
-	if EID == float.ID {
-		float.x += float64(DeltaX) / 4096
-		float.y += float64(DeltaY) / 4096
-		float.z += float64(DeltaZ) / 4096
+	if float.IsMine(EID) {
+		float.Move(DeltaX, DeltaY, DeltaZ)
 		//		fmt.Println(float)
 	}
-	return nil
-}
-
-//func onWindowsItemChange(id byte, slotID int, slot entity.Slot) error {
-//	if id == 0 {
-//		fmt.Println(slot.ItemID)
-//	}
-//	return nil
-//}
-
-func onParticle(ID int, longDistance bool, x, y, z float64, offsetX, offsetY, offsetZ float32, particleData float32, particleCount int) error {
-	if ID != 25 || waiting {
-		return nil
-	}
-	waiting = true
-	fmt.Printf("X:%f Y:%f Z:%f Distance:%f\n", x, y, z, distance(x, z))
-	go func() {
-		time.Sleep(4 * time.Second)
-		if err := getFish(); err != nil {
-			log.Print(err)
-		}
-		waiting = false
-	}()
 	return nil
 }
 

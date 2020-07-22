@@ -88,24 +88,28 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	//Join Game
-	err := c.JoinServer(ip, port)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Login success")
-	go sendMsg()
-	//Regist event handlers
-	c.Events.GameStart = onGameStart
-	c.Events.ChatMsg = onChatMsg
-	c.Events.Disconnect = onDisconnect
-	c.Events.SpawnObj = onSpawnObj
-	c.Events.EntityRelativeMove = onEntityRelativeMove
+	for {
+		//Join Game
+		err := c.JoinServer(ip, port)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Login success")
+		go sendMsg()
+		//Regist event handlers
+		c.Events.GameStart = onGameStart
+		c.Events.ChatMsg = onChatMsg
+		c.Events.Disconnect = onDisconnect
+		c.Events.SpawnObj = onSpawnObj
+		c.Events.EntityRelativeMove = onEntityRelativeMove
 
-	//JoinGame
-	err = c.HandleGame()
-	if err != nil {
-		log.Fatal(err)
+		//JoinGame
+		err = c.HandleGame()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Reconnect in 5s")
+		time.Sleep(5 * time.Second)
 	}
 }
 func sendMsg() error {
@@ -136,8 +140,8 @@ func onChatMsg(msg chat.Message, pos byte, sender uuid.UUID) error {
 	return nil
 }
 
-func onDisconnect(c chat.Message) error {
-	log.Println("Disconnect:", c)
+func onDisconnect(msg chat.Message) error {
+	log.Println("Disconnect:", msg)
 	return nil
 }
 

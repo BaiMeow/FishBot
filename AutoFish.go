@@ -48,7 +48,7 @@ func main() {
 	flag.BoolVar(&removemode, "remove", false, "删除配置模式")
 	flag.Parse()
 	log.Println("自动钓鱼机器人启动！")
-	log.Println("机器人版本：1.5.1")
+	log.Println("机器人版本：1.6.0")
 	log.Printf("游戏版本：%s", version)
 	log.Println("基于github.com/Tnze/go-mc")
 	log.Println("作者: Tnze＆BaiMeow")
@@ -99,7 +99,6 @@ func main() {
 	c.Events.GameStart = onGameStart
 	c.Events.ChatMsg = onChatMsg
 	c.Events.Disconnect = onDisconnect
-	c.Events.SoundPlay = onSound
 	c.Events.SpawnObj = onSpawnObj
 	c.Events.EntityRelativeMove = onEntityRelativeMove
 
@@ -112,7 +111,6 @@ func main() {
 func sendMsg() error {
 	var send []byte
 	for {
-		//fmt.Scanln(&send)
 		Reader := bufio.NewReader(os.Stdin)
 		send, _, _ = Reader.ReadLine()
 		if err := c.Chat(string(send)); err != nil {
@@ -131,18 +129,6 @@ func onGameStart() error {
 		return err
 	}
 	return c.UseItem(0)
-}
-
-func onSound(name string, category int, x, y, z float64, volume, pitch float32) error {
-	if name != "entity.fishing_bobber.splash" {
-		return nil
-	}
-	//	fmt.Println(distance(x, z))
-	if float.Distance(x, z) > 5 {
-		log.Println("远处的钓鱼声")
-		return nil
-	}
-	return getFish()
 }
 
 func onChatMsg(msg chat.Message, pos byte, sender uuid.UUID) error {
@@ -194,8 +180,9 @@ func onSpawnObj(EID int, UUID [16]byte, Type int, x, y, z float64, Pitch, Yaw fl
 
 func onEntityRelativeMove(EID, DeltaX, DeltaY, DeltaZ int) error {
 	if float.IsMine(EID) {
-		float.Move(DeltaX, DeltaY, DeltaZ)
-		//		fmt.Println(float)
+		if float.IsFish(DeltaX, DeltaY, DeltaZ) {
+			getFish()
+		}
 	}
 	return nil
 }

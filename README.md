@@ -2,9 +2,10 @@
 Minecraft内自动钓鱼  
 Fishing in Minecraft automatically
 
-基于[github.com/Tnze/go-mc]()
+基于[https://github.com/Tnze/go-mc](https://github.com/MscBaiMeow/FishBotReload)
 
-
+# 这个项目是我Golang学习的处女作，已经修修补补一段时间了，这次go-mc有一个较大的更新，是时候重写了
+# 另见 [https://github.com/MscBaiMeow/FishBotReload](https://github.com/MscBaiMeow/FishBotReload)
 
 #### 使用方法
 
